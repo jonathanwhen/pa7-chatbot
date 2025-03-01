@@ -18,7 +18,7 @@ class Chatbot:
     def __init__(self, llm_enabled=False):
         # The chatbot's default name is `moviebot`.
         # TODO: Give your chatbot a new name.
-        self.name = 'moviebot'
+        self.name = 'movie_recommender'
 
         self.llm_enabled = llm_enabled
 
@@ -48,7 +48,7 @@ class Chatbot:
         # TODO: Write a short greeting message                                 #
         ########################################################################
 
-        greeting_message = "Hello, how are you?"
+        greeting_message = "Welcome to the chatbot"
 
         ########################################################################
         #                             END OF YOUR CODE                         #
@@ -63,7 +63,7 @@ class Chatbot:
         # TODO: Write a short farewell message                                 #
         ########################################################################
 
-        goodbye_message = "Have a nice day!"
+        goodbye_message = "Have a great day!"
 
         ########################################################################
         #                          END OF YOUR CODE                            #
