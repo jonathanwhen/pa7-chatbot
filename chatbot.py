@@ -9,6 +9,8 @@ import util
 from pydantic import BaseModel, Field
 
 import numpy as np
+import re
+from porter_stemmer import PorterStemmer
 
 
 # noinspection PyMethodMayBeStatic
@@ -163,8 +165,8 @@ class Chatbot:
         pre-processed with preprocess()
         :returns: list of movie titles that are potentially in the text
         """
-        titles = preprocessed_input.split("")[1::2]
-        return titles
+        return []
+        
 
     def find_movies_by_title(self, title):
         """ Given a movie title, return a list of indices of matching movies.
@@ -236,16 +238,6 @@ class Chatbot:
         # The starter code returns a new matrix shaped like ratings but full of
         # zeros.
         binarized_ratings = np.zeros_like(ratings)
-        m, n = ratings.shape
-        for i in range(m):
-            for j in range(n):
-                if ratings[i, j] == 0:
-                    pass
-                elif ratings[i, j] <= threshold:
-                    binarized_ratings[i, j] = -1
-                else: # ratings[i, j] > threshold
-                    binarized_ratings[i, j] = 1
-
         ########################################################################
         #                        END OF YOUR CODE                              #
         ########################################################################
@@ -265,9 +257,6 @@ class Chatbot:
         # TODO: Compute cosine similarity between the two vectors.             #
         ########################################################################
         similarity = 0
-        numerator = np.dot(u, v)
-        denominator = np.linalg.norm(u) * np.linalg.norm(v)
-        similarity = numerator / denominator
         ########################################################################
         #                          END OF YOUR CODE                            #
         ########################################################################
@@ -308,29 +297,9 @@ class Chatbot:
         # cosine similarity, no mean-centering, and no normalization of        #
         # scores.                                                              #
         ########################################################################
-        num_movies, num_users = ratings_matrix.shape
-        
-        # comupute similarity scores
-        cosine_similarity = np.zeros((num_movies, num_movies))
-        for i in range(num_movies):
-            for j in range(num_movies):
-                cosine_similarity[i, j] = self.similarity(ratings_matrix[i], ratings_matrix[j])
-        
-        # compute new user's ratings
-        # potential_recommendations[i] = predicted rating for movie i by the new user
-        potential_recommendations = {}
-        for i in range(num_movies):
-            if user_ratings[i] == 0:
-                predicted_rating = 0
-                for j in range(num_movies):
-                    if user_ratings[j] != 0:
-                        predicted_rating += cosine_similarity[i, j] * user_ratings[j]
-        sorted_recommendations = sorted(potential_recommendations.items(), key=lambda x:x[1], reverse=True)
-        
+    
         # Populate this list with k movie indices to recommend to the user.
         recommendations = []
-        for i in range(k):
-            recommendations.append(sorted_recommendations[i])
         ########################################################################
         #                        END OF YOUR CODE                              #
         ########################################################################
