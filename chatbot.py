@@ -33,7 +33,7 @@ class Chatbot:
         ########################################################################
         # TODO: Binarize the movie ratings matrix.                             #
         ########################################################################
-
+        ratings = self.binarize(ratings)
         # Binarize the movie ratings before storing the binarized matrix.
         self.ratings = ratings
         ########################################################################
@@ -165,7 +165,8 @@ class Chatbot:
         pre-processed with preprocess()
         :returns: list of movie titles that are potentially in the text
         """
-        return []
+        pattern = '"([^"]*)"'
+        return re.findall(pattern, preprocessed_input)
         
 
     def find_movies_by_title(self, title):
@@ -186,7 +187,36 @@ class Chatbot:
         :param title: a string containing a movie title
         :returns: a list of indices of matching movies
         """
-        return []
+        movies = []
+
+        year_pattern = '\(\d\d\d\d\)$'
+        processed_title = title
+        year = None
+        if re.search(year_pattern, title) is not None:
+            processed_title = title[:-7]
+            year = title[-7:]
+
+        a_pattern = '^A\s'
+        article_an = '^An\s'
+        article_the = '^The\s'
+        if re.search(a_pattern, title) is not None:
+            processed_title = processed_title[2:] + ", " + processed_title[:1]
+        if re.search(article_an, title) is not None:
+            processed_title = processed_title[3:] + ", " + processed_title[:2]
+        if re.search(article_the, title) is not None:
+            processed_title = processed_title[4:] + ", " + processed_title[:3]
+
+        if year is not None:
+            pattern = processed_title + year
+            for i in range(len(self.titles)):
+                if pattern == self.titles[i][0]:
+                    movies.append(i)
+        else:
+            pattern = '^' + processed_title + "\s\(\d\d\d\d\)"
+            for i in range(len(self.titles)):
+                if re.search(pattern, self.titles[i][0]) is not None:
+                    movies.append(i)
+        return movies
 
     def extract_sentiment(self, preprocessed_input):
         """Extract a sentiment rating from a line of pre-processed text.
@@ -204,7 +234,47 @@ class Chatbot:
         pre-processed with preprocess()
         :returns: a numerical value for the sentiment of the text
         """
-        return 0
+        self.stemmer = PorterStemmer()
+        strings_to_remove = self.extract_titles(preprocessed_input)
+        for string in strings_to_remove:
+            preprocessed_input = preprocessed_input.replace(string, "")
+
+        new_sentiment_dictionary = {}
+        for key in self.sentiment:
+            stemmed_word = self.stemmer.stem(key)
+            new_sentiment_dictionary[stemmed_word] = self.sentiment[key]
+
+        flag = 1
+        negation = ["didn't", "never", "not"]
+        for i in range(len(negation)):
+            negation[i] = self.stemmer.stem(negation[i])
+
+        words = preprocessed_input.split(" ")
+        count_pos = 0
+        count_neg = 0
+        for word in words:
+            word = self.stemmer.stem(word)
+            if word in negation:
+                flag *= -1
+            if word in new_sentiment_dictionary:
+                if new_sentiment_dictionary[word] == 'pos':
+                    if flag == 1:
+                        count_pos += 1
+                    else: # flag == -1
+                        count_neg += 1
+                        flag = 1
+                else: # new_sentiment_dictionary[word] == 'neg'
+                    if flag == 1:
+                        count_neg += 1
+                    else:
+                        count_pos += 1
+                        flag = 1
+        if count_pos > count_neg:
+            return 1
+        elif count_pos < count_neg:
+            return -1
+        else:
+            return 0
 
     ############################################################################
     # 3. Movie Recommendation helper functions                                 #
@@ -242,7 +312,7 @@ class Chatbot:
         for i in range(m):
             for j in range(n):
                 if ratings[i, j] == 0:
-                    pass
+                     binarized_ratings[i, j] = 0
                 elif ratings[i, j] <= threshold:
                     binarized_ratings[i, j] = -1
                 else: # ratings[i, j] > threshold
@@ -311,32 +381,26 @@ class Chatbot:
         # cosine similarity, no mean-centering, and no normalization of        #
         # scores.                                                              #
         ########################################################################
-        return []
-        num_movies, num_users = ratings_matrix.shape
-        
-        # comupute similarity scores
-        cosine_similarity = np.zeros((num_movies, num_movies))
-        for i in range(num_movies):
-            for j in range(num_movies):
-                cosine_similarity[i, j] = self.similarity(ratings_matrix[i], ratings_matrix[j])
-        
-        # compute new user's ratings
-        # potential_recommendations[i] = predicted rating for movie i by the new user
-        potential_recommendations = {}
-        for i in range(num_movies):
-            if user_ratings[i] == 0:
-                predicted_rating = 0
-                for j in range(num_movies):
-                    if user_ratings[j] != 0:
-                        predicted_rating += cosine_similarity[i, j] * user_ratings[j]
-                potential_recommendations[i] = predicted_rating
-        sorted_recommendations = sorted(potential_recommendations.items(), key=lambda x:x[1], reverse=True)
-        
-        # Populate this list with k movie indices to recommend to the user.
-        recommendations = []
+        num_movies = np.asarray(ratings_matrix.shape[0])
+        rated_movies = []
+        for movie in range(num_movies):
+            if user_ratings[movie] != 0:
+                rated_movies.append(movie)
 
-        for i in range(k):
-            recommendations.append(sorted_recommendations[i][0])
+        potential_ratings = {}
+        for i in range(num_movies):
+            predicted_rating = 0
+            for movie in rated_movies:
+                predicted_rating += (self.similarity(ratings_matrix[i], ratings_matrix[movie]) * user_ratings[movie])
+            potential_ratings[i] = predicted_rating
+    
+        sorted_recommendations = sorted(potential_ratings.items(), key=lambda x:x[1], reverse=True)
+        index = 0
+        recommendations = []
+        while len(recommendations) < k:
+            if sorted_recommendations[index][0] not in rated_movies:
+                recommendations.append(sorted_recommendations[index][0])
+            index += 1 
         ########################################################################
         #                        END OF YOUR CODE                              #
         ########################################################################
