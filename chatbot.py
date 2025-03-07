@@ -100,110 +100,148 @@ class Chatbot:
         :param line: a user-supplied line of text
         :returns: a string containing the chatbot's response to the user input
         """
+
         ########################################################################
         # TODO: Implement the extraction and transformation in this method,    #
         # possibly calling other functions. Although your code is not graded   #
         # directly based on how modular it is, we highly recommended writing   #
         # code in a modular fashion to make it easier to improve and debug.    #
         ########################################################################
+
+        affirmative_responses = [
+            "yes", "yeah", "yep", "ya", "yup", "sure", "of course", "okay", "ok", 
+            "alright", "absolutely", "certainly", "indeed", "affirmative", "right", 
+            "for sure", "you bet", "totally", "sure thing", "aye", "roger that", "y", "yes please"
+        ]
+        negative_responses = ["no", "n", "nah", "nope", "not really", "no thanks", "no thank you"]
+
+        unsure_responses = [
+            "Hmm, I didn't quite catch that. Can you tell me about a movie you've seen recently?",
+            "I'm not sure I recognized a movie in what you said. Could you mention a title?",
+            "I couldn't identify a movie in your message. Let me know about one you've watched!"
+        ]
+
+        multiple_titles_responses = [
+            "It looks like you mentioned multiple movies. Could you tell me about just one at a time?",
+            "I see more than one movie in your response! Let's focus on one for now.",
+            "You're talking about multiple movies! Pick one, and we can chat about it."
+        ]
+
+        unknown_movie_responses = [
+            "Sorry, I couldn't find \"{}\" in my database. Could you try another movie?",
+            "\"{}\" doesn't seem to be in my records. Maybe try another one?",
+            "I couldn't locate \"{}\" in my database. Do you have another movie in mind?"
+        ]
+
+        multiple_matches_responses = [
+            "I found multiple movies called \"{}\". Could you specify the year in parentheses along with the movie title?",
+            "There are several movies named \"{}\". Please include the release year in parentheses in your response.",
+            "\"{}\" has multiple versions! Try adding the year in parentheses to clarify which one you mean."
+        ]
+
+        neutral_sentiment_responses = [
+            "I'm not sure how you feel about \"{}\". Could you clarify?",
+            "Hmm, I can't tell if you liked \"{}\" or not. Could you let me know?",
+            "It seems like you have neutral feelings about \"{}\". Care to elaborate?"
+        ]
+
+        positive_sentiment_responses = [
+            "Great, so you liked \"{}\"! ",
+            "Awesome, you enjoyed \"{}\"! ",
+            "Nice! I see that you liked \"{}\". "
+        ]
+
+        negative_sentiment_responses = [
+            "I see, you didn't enjoy \"{}\". ",
+            "Got it, you didn't like \"{}\". ",
+            "Understood, \"{}\" wasn't for you. "
+        ]
+
+        more_reviews_responses = [
+            "Tell me about more movies so I can make recommendations.",
+            "What other movies have you seen?",
+            "Let me know about more movies you've watched!"
+        ]
+
+        recommendation_ready_responses = [
+            "That's enough for me to make a recommendation!",
+            "Great! I have enough info to suggest a movie for you.",
+            "Awesome! I can now recommend something you might like."
+        ]
+
+        want_first_recommendation_responses = [
+            "Would you like me to recommend you a movie? (yes/no)", 
+            "Should I proceed with a recommendation? (yes/no)",
+            "Are you up for a recommendation? (yes/no)"
+        ]
+
+        additional_recommendation_responses = [
+            "I think you might enjoy \"{}\". ",
+            "Based on your taste, you might like \"{}\"! ",
+            "\"{}\" could be a great match for you! "
+        ]
+
+        want_another_recommendation_responses = [
+            "Want another recommendation? (yes/no)", 
+            "Would you like more recommendations? (yes/no)",
+            "Interested in another recommendation? (yes/no)"
+        ]
+
+        no_more_recommendations_responses = [
+            "I don't have any more recommendations for now! Let me know if you want to discuss more movies.",
+            "That's all the recommendations I have at the moment! Feel free to tell me about more movies.",
+            "No more suggestions from me for now! Let’s chat about more movies if you’d like."
+        ]
+
+        ending_recommendation_responses = [
+            "Alright! Let me know if you want to talk about more movies.",
+            "Got it! If you ever want more recommendations, just ask.",
+            "No worries! I’m here whenever you want to discuss movies."
+        ]
+
         if self.llm_enabled:
-            response = "I processed {} in LLM Programming mode!!".format(line)
+            titles = self.extract_titles(line)
+            random_input = self.random_input(line)
+            emotions = self.extract_emotion(line)
+
+            random_responses = ["Hm, that's not really what I want to talk about right now, let's go back to movies",
+            "Got it.",]
+
+            if "True" in random_input:
+                return random.choice(random_responses) + "and the random input was: " + random_input
+
+            if "Anger" in emotions:
+                return "Oh! Did I make you angry? I apologize."
+            if "Disgust" in emotions:
+                return "It seems like you really didn't enjoy that suggestion. I'll try to recommend better ones."
+            if "Surprise" in emotions:
+                return "It seems like you're surprised by my recommendation. Would you like to know why I recommended it?"
+            if "Happiness" in emotions:
+                return "Yay! I am so happy that you are happy! Let's talk about more movies!"
+            if "Sadness" in emotions:
+                return "I'm sorry for making you sad. I'll try to recommend better ones."
+            if "Fear" in emotions:
+                return "I apologize for making you afraid. Would you like to know why I recommended it?"
+            if not emotions:
+                return "I'm here to help! What kind of movies are you interested in today?"
+
+            if len(titles) == 0:
+                return random.choice(unsure_responses)
+
+            if len(titles) > 1:
+                return random.choice(multiple_titles_responses)
+
+            title = titles[0]
+            movie_indices = self.find_movies_by_title(title)
+            
+            if not movie_indices:
+                return random.choice(unknown_movie_responses).format(title)
+
+            if len(movie_indices) > 1:
+                return random.choice(multiple_matches_responses).format(title)
+
             return response
         else:
-            affirmative_responses = [
-                "yes", "yeah", "yep", "ya", "yup", "sure", "of course", "okay", "ok", 
-                "alright", "absolutely", "certainly", "indeed", "affirmative", "right", 
-                "for sure", "you bet", "totally", "sure thing", "aye", "roger that", "y", "yes please"
-            ]
-            negative_responses = ["no", "n", "nah", "nope", "not really", "no thanks", "no thank you"]
-            
-            unsure_responses = [
-                "Hmm, I didn't quite catch that. Can you tell me about a movie you've seen recently?",
-                "I'm not sure I recognized a movie in what you said. Could you mention a title?",
-                "I couldn't identify a movie in your message. Let me know about one you've watched!"
-            ]
-            
-            multiple_titles_responses = [
-                "It looks like you mentioned multiple movies. Could you tell me about just one at a time?",
-                "I see more than one movie in your response! Let's focus on one for now.",
-                "You're talking about multiple movies! Pick one, and we can chat about it."
-            ]
-            
-            unknown_movie_responses = [
-                "Sorry, I couldn't find \"{}\" in my database. Could you try another movie?",
-                "\"{}\" doesn't seem to be in my records. Maybe try another one?",
-                "I couldn't locate \"{}\" in my database. Do you have another movie in mind?"
-            ]
-            
-            multiple_matches_responses = [
-                "I found multiple movies called \"{}\". Could you specify the year in parentheses along with the movie title?",
-                "There are several movies named \"{}\". Please include the release year in parentheses in your response.",
-                "\"{}\" has multiple versions! Try adding the year in parentheses to clarify which one you mean."
-            ]
-            
-            neutral_sentiment_responses = [
-                "I'm not sure how you feel about \"{}\". Could you clarify?",
-                "Hmm, I can't tell if you liked \"{}\" or not. Could you let me know?",
-                "It seems like you have neutral feelings about \"{}\". Care to elaborate?"
-            ]
-            
-            positive_sentiment_responses = [
-                "Great, so you liked \"{}\"! ",
-                "Awesome, you enjoyed \"{}\"! ",
-                "Nice! I see that you liked \"{}\". "
-            ]
-            
-            negative_sentiment_responses = [
-                "I see, you didn't enjoy \"{}\". ",
-                "Got it, you didn't like \"{}\". ",
-                "Understood, \"{}\" wasn't for you. "
-            ]
-
-            more_reviews_responses = [
-                "Tell me about more movies so I can make recommendations.",
-                "What other movies have you seen?",
-                "Let me know about more movies you've watched!"
-            ]
-
-            recommendation_ready_responses = [
-                "That's enough for me to make a recommendation!",
-                "Great! I have enough info to suggest a movie for you.",
-                "Awesome! I can now recommend something you might like."
-            ]
-
-            want_first_recommendation_responses = [
-                "Would you like me to recommend you a movie? (yes/no)", 
-                "Should I proceed with a recommendation? (yes/no)",
-                "Are you up for a recommendation? (yes/no)"
-            ]
-            
-            additional_recommendation_responses = [
-                "I think you might enjoy \"{}\". ",
-                "Based on your taste, you might like \"{}\"! ",
-                "\"{}\" could be a great match for you! "
-            ]
-
-            want_another_recommendation_responses = [
-                "Want another recommendation? (yes/no)", 
-                "Would you like more recommendations? (yes/no)",
-                "Interested in another recommendation? (yes/no)"
-            ]
-            
-            no_more_recommendations_responses = [
-                "I don't have any more recommendations for now! Let me know if you want to discuss more movies.",
-                "That's all the recommendations I have at the moment! Feel free to tell me about more movies.",
-                "No more suggestions from me for now! Let’s chat about more movies if you’d like."
-            ]
-            
-            ending_recommendation_responses = [
-                "Alright! Let me know if you want to talk about more movies.",
-                "Got it! If you ever want more recommendations, just ask.",
-                "No worries! I’m here whenever you want to discuss movies."
-            ]
-            
-            if self.llm_enabled:
-                return "I processed {} in LLM Programming mode!!".format(line)
-
             if self.awaiting_recommendation:
                 line = re.sub(r"[^\w\s]", "", line)
                 if line.lower() in affirmative_responses:
@@ -334,6 +372,7 @@ class Chatbot:
         :param title: a string containing a movie title
         :returns: a list of indices of matching movies
         """
+
         matching_indices = []
         title = title.strip()
         year_match = None
@@ -341,6 +380,13 @@ class Chatbot:
         if year_extract:
             year_match = year_extract.group(1)
             title = title.rsplit('(', 1)[0].strip()
+
+        if self.llm_enabled:
+            system_prompt = """If the movie title is in German, Spanish, and French, Danish, or Italian, and not English, please translate it to English directly."""
+            message = title
+            stop = ["\n"]
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            title = response
 
         articles = ['The ', 'A ', 'An ']
         original_title = title
@@ -350,8 +396,6 @@ class Chatbot:
                 title = title[len(article):].strip()
                 real_article += (", " + article)
                 break
-
-        
 
         title_variations = [
             original_title,
@@ -375,6 +419,19 @@ class Chatbot:
                         break
 
         return matching_indices
+
+    def random_input(self, preprocessed_input):
+        system_prompt = """Your name is moviebot. You are a movie recommender chatbot. """ +\
+        """If the input below is a random response completely unrelated to movies or a greeting,
+        please respond ONLY WITH "True". Otherwise, please respond ONLY WITH "False". To be clear,
+        your response can only be "True" or "False" and will be a single word with on spaces or quotes."""
+        # Our llm will stop when it sees a newline character.
+        # You can add more stop tokens to the list if you want to stop on other tokens!
+        # Feel free to remove the stop parameter if you want the llm to run to completion.
+        stop = ["\n"]
+        response = util.simple_llm_call(system_prompt, preprocessed_input, stop=stop)
+
+        return response
 
     def extract_sentiment(self, preprocessed_input):
         """Extract a sentiment rating from a line of pre-processed text.
@@ -595,7 +652,13 @@ class Chatbot:
         ########################################################################
 
         system_prompt = """Your name is moviebot. You are a movie recommender chatbot. """ +\
-        """You can help users find movies they like and provide information about movies."""
+        """You can help users find movies they like and provide information about movies.""" +\
+        """There are 3 main requirements for your responses: """ +\
+        """1. Communicating sentiment and movie extracted to the user. E.g.(I enjoyed "The Notebook". -> Ok, you liked "The Notebook"! Tell me what you thought of another movie.) """ +\
+        """2. Staying Focused on Movies. E.g.(Can we talk about cars instead? -> As a moviebot assistant my job is to help you with only your movie related needs!  Anything film related that you'd like to discuss?)""" +\
+        """3. Giving recommendations after 5 input films (asks automatically after user provides 5 data points)
+        E.g.(I disliked "The Notebook", but enjoyed "Batman" "Captain America" "Avengers: Infinity Wars" and "Black Panther". -> Ok, now that you've shared your opinion on 5/5 films would you like a recommendation?)"""
+
 
         ########################################################################
         #                          END OF YOUR CODE                            #
@@ -640,7 +703,18 @@ class Chatbot:
         :returns: a list of emotions in the text or an empty list if no emotions found.
         Possible emotions are: "Anger", "Disgust", "Fear", "Happiness", "Sadness", "Surprise"
         """
-        return []
+        system_prompt = """Your job is to identify the following emotions
+        in a prompt: anger, disgust, fear, happiness, sadness and surprise. 
+        For clarity, you can categorize each message as 0 or more of these.
+        Please output your response in a format similar to these input-output
+        pairs: "I am angry at you for your bad recommendations"	["Anger"]
+        "Ugh that movie was a disaster"	["Disgust"]
+        Ewww that movie was so gruesome!!  Stop making stupid recommendations!!	["Disgust", "Anger"]
+        Wait what?  You recommended "Titanic (1997)"???	["Surprise"]
+        What movies are you going to recommend today?	[]\n\n"""
+        message = preprocessed_input
+        response = util.simple_llm_call(system_prompt, message)
+        return response
 
     ############################################################################
     # 6. Debug info                                                            #
@@ -674,7 +748,6 @@ class Chatbot:
         movies which it thinks the user might like using sentiment analysis and a database of
         user reviews.
         """
-
 
 if __name__ == '__main__':
     print('To run your chatbot in an interactive loop from the command line, '
