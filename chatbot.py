@@ -200,48 +200,89 @@ class Chatbot:
         ]
 
         if self.llm_enabled:
-            titles = self.extract_titles(line)
             random_input = self.random_input(line)
             emotions = self.extract_emotion(line)
+            stop = ["\n"]
 
             random_responses = ["Hm, that's not really what I want to talk about right now, let's go back to movies",
             "Got it.",]
 
-            if "True" in random_input:
-                return random.choice(random_responses) + "and the random input was: " + random_input
-
             if "Anger" in emotions:
-                return "Oh! Did I make you angry? I apologize."
+                message =  "Oh! Did I make you angry? I apologize."
+                system_prompt = "Speak the message as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
             if "Disgust" in emotions:
-                return "It seems like you really didn't enjoy that suggestion. I'll try to recommend better ones."
+                message = "It seems like you really didn't enjoy that suggestion. I'll try to recommend better ones."
+                system_prompt = "Speak the message as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
             if "Surprise" in emotions:
-                return "It seems like you're surprised by my recommendation. Would you like to know why I recommended it?"
-            if "Happiness" in emotions:
-                return "Yay! I am so happy that you are happy! Let's talk about more movies!"
-            if "Sadness" in emotions:
-                return "I'm sorry for making you sad. I'll try to recommend better ones."
+                message =  "It seems like you're surprised by my recommendation. Would you like to know why I recommended it?"
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona 
+            if "Happy" in emotions:
+                message = "Yay! I am so happy that you are happy! Let's talk about more movies!" 
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
+            if "Sad" in emotions:
+                message =  "I'm sorry for making you sad. I'll try to recommend better ones."
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
             if "Fear" in emotions:
-                return "I apologize for making you afraid. Would you like to know why I recommended it?"
-            if not emotions:
-                return "I'm here to help! What kind of movies are you interested in today?"
+                message = "I apologize for making you afraid. Would you like to know why I recommended it?"
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
+            
+            if "Random" in random_input:
+                message = random.choice(random_responses)
+                system_prompt = "Speak the message as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
 
+            titles = self.extract_titles(line)
             if len(titles) == 0:
-                return random.choice(unsure_responses)
+                message = random.choice(unsure_responses)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
 
             if len(titles) > 1:
-                return random.choice(multiple_titles_responses)
+                message = random.choice(multiple_titles_responses)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
 
             title = titles[0]
             movie_indices = self.find_movies_by_title(title)
-            
+        
             if not movie_indices:
-                return random.choice(unknown_movie_responses).format(title)
+                message = random.choice(unknown_movie_responses).format(title)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
 
             if len(movie_indices) > 1:
-                return random.choice(multiple_matches_responses).format(title)
+                message = random.choice(multiple_matches_responses).format(title)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
 
-
-
+            sentiment = self.extract_sentiment(line)
+            if sentiment > 0:
+                message = random.choice(positive_sentiment_responses).format(title) + '\n' + random.choice(more_reviews_responses)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
+            else:
+                message = random.choice(negative_sentiment_responses).format(title) + '\n' + random.choice(more_reviews_responses)
+                system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
+                persona = util.simple_llm_call(system_prompt, message, stop=stop)
+                return persona
             #return response
         else:
             if self.awaiting_recommendation:
@@ -394,33 +435,26 @@ class Chatbot:
             message = title
             json_class = LanguageExtractor
 
-            for i in range(5):
-                extracted_language = util.json_llm_call(system_prompt, message, json_class)
+            extracted_language = util.json_llm_call(system_prompt, message, json_class)
 
-                stop = ["\n"]
-                if 'German' in extracted_language and extracted_language['German']:
-                    system_prompt = "Translate movie title from German to English in the format title"
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
-                    break
-                elif 'Spanish' in extracted_language and extracted_language['Spanish']:
-                    system_prompt = "Translate movie title from Spanish to English in the format title"
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
-                    break
-                elif 'French' in extracted_language and extracted_language['French']:
-                    system_prompt = "Translate movie title from French to English in the format title"
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
-                    break
-                elif 'Danish' in extracted_language and extracted_language['Danish']:
-                    system_prompt = "Translate movie title from Danish to English in the format title"
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
-                    break
-                elif 'Italian' in extracted_language and extracted_language['Italian']:
-                    system_prompt = "Translate movie title from Italian to English in the format title"
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
-                    break
-                else:
-                    system_prompt = "If movie title is in German, Spanish, French, Danish, or Italian, translate it to English in the format title."
-                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+            stop = ["\n"]
+            if 'German' in extracted_language and extracted_language['German']:
+                system_prompt = "Translate movie title from German to English in the format title"
+                title = util.simple_llm_call(system_prompt, message, stop=stop)
+            elif 'Spanish' in extracted_language and extracted_language['Spanish']:
+                system_prompt = "Translate movie title from Spanish to English in the format title"
+                title = util.simple_llm_call(system_prompt, message, stop=stop)
+            elif 'French' in extracted_language and extracted_language['French']:
+                system_prompt = "Translate movie title from French to English in the format title"
+                title = util.simple_llm_call(system_prompt, message, stop=stop)
+            elif 'Danish' in extracted_language and extracted_language['Danish']:
+                system_prompt = "Translate movie title from Danish to English in the format title"
+                title = util.simple_llm_call(system_prompt, message, stop=stop)
+            elif 'Italian' in extracted_language and extracted_language['Italian']:
+                system_prompt = "Translate movie title from Italian to English in the format title"
+                title = util.simple_llm_call(system_prompt, message, stop=stop)
+            else:
+                pass
             title = title.strip()
         
         articles = ['The ', 'A ', 'An ']
@@ -458,17 +492,31 @@ class Chatbot:
         return matching_indices
 
     def random_input(self, preprocessed_input):
-        system_prompt = """Your name is moviebot. You are a movie recommender chatbot. """ +\
+        class MovieExtractor(BaseModel):
+            Movie_Title: bool = Field(default=False)
+            Sentiment: bool = Field(default=False)
+                
+        system_prompt = "You are a movie title and sentiment. Read the input and extract it to a JSON object."
+        message = preprocessed_input 
+        json_class = MovieExtractor
+        extracted_movie = util.json_llm_call(system_prompt, message, json_class)
+
+        if extracted_movie['Movie_Title'] and extracted_movie['Sentiment']:
+            return "Movie"
+        else:
+            system_prompt = """Your name is moviebot. You are a movie recommender chatbot. """ +\
         """If the input below is a random response completely unrelated to movies or a greeting,
         please respond ONLY WITH "True". Otherwise, please respond ONLY WITH "False". To be clear,
         your response can only be "True" or "False" and will be a single word with on spaces or quotes."""
         # Our llm will stop when it sees a newline character.
         # You can add more stop tokens to the list if you want to stop on other tokens!
         # Feel free to remove the stop parameter if you want the llm to run to completion.
-        stop = ["\n"]
-        response = util.simple_llm_call(system_prompt, preprocessed_input, stop=stop)
-
-        return response
+            stop = ["\n"]
+            response = util.simple_llm_call(system_prompt, preprocessed_input, stop=stop)
+            if "True" in response:
+                return "Random"
+            else:
+                return "Movie"
 
     def extract_sentiment(self, preprocessed_input):
         """Extract a sentiment rating from a line of pre-processed text.
@@ -742,8 +790,8 @@ class Chatbot:
             Anger: bool = Field(default=False)
             Disgust: bool = Field(default=False)
             Fear: bool = Field(default=False)
-            Happiness: bool = Field(default=False)
-            Sadness: bool = Field(default=False)
+            Happy: bool = Field(default=False)
+            Sad: bool = Field(default=False)
             Surprise: bool = Field(default=False)
 
         system_prompt = "You are an emotion extractor bot. Read the sentence and extract the emotion into a JSON object."
@@ -776,20 +824,20 @@ class Chatbot:
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
                 output.append('Fear')
-        if 'Happiness' in extracted_emotion and extracted_emotion['Happiness']:
-            output.append('Happiness')
+        if 'Happy' in extracted_emotion and extracted_emotion['Happy']:
+            output.append('Happy')
         else:
-            system_prompt = "Did you detect happiness in the sentence? Answer Yes or No"
+            system_prompt = "Did you detect happy in the sentence? Answer Yes or No"
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
-                output.append('Happiness')
-        if 'Sadness' in extracted_emotion and extracted_emotion['Sadness']:
-            output.append('Sadness')
+                output.append('Happy')
+        if 'Sad' in extracted_emotion and extracted_emotion['Sad']:
+            output.append('Sad')
         else:
-            system_prompt = "Did you detect sadness in the sentence? Answer Yes or No"
+            system_prompt = "Did you detect sad in the sentence? Answer Yes or No"
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
-                output.append('Sadness')
+                output.append('Sad')
         if 'Surprise' in extracted_emotion and extracted_emotion['Surprise']:
             output.append('Surprise')
         else:
