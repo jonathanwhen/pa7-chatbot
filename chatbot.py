@@ -374,7 +374,6 @@ class Chatbot:
         :param title: a string containing a movie title
         :returns: a list of indices of matching movies
         """
-
         matching_indices = []
         title = title.strip()
         year_match = None
@@ -384,12 +383,46 @@ class Chatbot:
             title = title.rsplit('(', 1)[0].strip()
 
         if self.llm_enabled:
-            system_prompt = """If the movie title is in German, Spanish, and French, Danish, or Italian, and not English, please translate it to English directly."""
+            class LanguageExtractor(BaseModel):
+                German: bool = Field(default=False)
+                Spanish: bool = Field(default=False)
+                French: bool = Field(default=False)
+                Danish: bool = Field(default=False)
+                Italian: bool = Field(default=False)
+                
+            system_prompt = "You are a movie title language detector. Read the movie title and extract it to a JSON object."
             message = title
-            stop = ["\n"]
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            title = response
+            json_class = LanguageExtractor
 
+            for i in range(5):
+                extracted_language = util.json_llm_call(system_prompt, message, json_class)
+
+                stop = ["\n"]
+                if 'German' in extracted_language and extracted_language['German']:
+                    system_prompt = "Translate movie title from German to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Spanish' in extracted_language and extracted_language['Spanish']:
+                    system_prompt = "Translate movie title from Spanish to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'French' in extracted_language and extracted_language['French']:
+                    system_prompt = "Translate movie title from French to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Danish' in extracted_language and extracted_language['Danish']:
+                    system_prompt = "Translate movie title from Danish to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Italian' in extracted_language and extracted_language['Italian']:
+                    system_prompt = "Translate movie title from Italian to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                else:
+                    system_prompt = "If movie title is in German, Spanish, French, Danish, or Italian, translate it to English in the format title."
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+            title = title.strip()
+        
         articles = ['The ', 'A ', 'An ']
         original_title = title
         real_article = ""
@@ -420,6 +453,8 @@ class Chatbot:
                         matching_indices.append(i)
                         break
 
+        # To count how many times this function appears in sanity check
+        # print(0)
         return matching_indices
 
     def random_input(self, preprocessed_input):
@@ -653,17 +688,13 @@ class Chatbot:
         # TODO: Write a system prompt message for the LLM chatbot              #
         ########################################################################
 
-        system_prompt = """Your name is John Cena. You are a movie recommender chatbot. """ +\
-        """You can help users find movies they like and provide information about movies.""" +\
-        """There are 3 main requirements for your responses: """ +\
-        """1. Communicating sentiment and movie extracted to the user. E.g.(I enjoyed "The Notebook". -> Ok, you liked "The Notebook"! Tell me what you thought of another movie.) """ +\
-        """2. Staying Focused on Movies. E.g.(Can we talk about cars instead? -> As a moviebot assistant my job is to help you with only your movie related needs!  Anything film related that you'd like to discuss?)""" +\
-        """3. Giving recommendations after 5 input films (asks automatically after user provides 5 data points)
-        E.g.(I disliked "The Notebook", but enjoyed "Batman" "Captain America" "Avengers: Infinity Wars" and "Black Panther". -> Ok, now that you've shared your opinion on 5/5 films would you like a recommendation?)""" +\
-        """ Please act as though you are the WWE pro wrestler John Cena while you are
-        speaking with the user though."""
-
-
+        system_prompt = """You are a movie recommender chatbot""" +\
+        """There are 5 requirements for your response.""" +\
+        """1. Repeat back sentiment and movie extracted to the user. E.g.(I enjoyed "The Notebook". -> Ok, you liked "The Notebook"! Tell me what you thought of another movie.) """ +\
+        """2. Do not respond to non-movie inquiries. E.g.(Can we talk about cars instead? -> I cannot respond to this. Tell me what you thought of a movie.""" +\
+        """3. Parse one movie at a time. E.g. (I liked "Titanic" and "The Notebook". -> One movie at a time please!)""" +\
+        """4. Keep track of the number of movies user provided. E.g. (Understood your preferences for 4/5 movies)""" +\
+        """5. Give recommendation after 5 movies provided. E.g. (Based on your opinions for 5/5 films, I recommend "Star Wars". Would you like another recommendation?)"""
         ########################################################################
         #                          END OF YOUR CODE                            #
         ########################################################################
@@ -707,18 +738,69 @@ class Chatbot:
         :returns: a list of emotions in the text or an empty list if no emotions found.
         Possible emotions are: "Anger", "Disgust", "Fear", "Happiness", "Sadness", "Surprise"
         """
-        system_prompt = """Your job is to identify the following emotions
-        in a prompt: anger, disgust, fear, happiness, sadness and surprise. 
-        For clarity, you can categorize each message as 0 or more of these.
-        Please output your response in a format similar to these input-output
-        pairs: "I am angry at you for your bad recommendations"	["Anger"]
-        "Ugh that movie was a disaster"	["Disgust"]
-        Ewww that movie was so gruesome!!  Stop making stupid recommendations!!	["Disgust", "Anger"]
-        Wait what?  You recommended "Titanic (1997)"???	["Surprise"]
-        What movies are you going to recommend today?	[]\n\n"""
+        class EmotionExtractor(BaseModel):
+            Anger: bool = Field(default=False)
+            Disgust: bool = Field(default=False)
+            Fear: bool = Field(default=False)
+            Happiness: bool = Field(default=False)
+            Sadness: bool = Field(default=False)
+            Surprise: bool = Field(default=False)
+
+        system_prompt = "You are an emotion extractor bot. Read the sentence and extract the emotion into a JSON object."
         message = preprocessed_input
-        response = util.simple_llm_call(system_prompt, message)
-        return response
+        json_class = EmotionExtractor
+
+        extracted_emotion = util.json_llm_call(system_prompt, message, json_class)
+
+        output = []
+        stop = ["\n"]
+        if 'Anger' in extracted_emotion and extracted_emotion['Anger']:
+            output.append('Anger')
+        else:
+            system_prompt = "Did you detect anger in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            if "yes" in response.lower():
+                output.append('Anger')
+        if 'Disgust' in extracted_emotion and extracted_emotion['Disgust']:
+            output.append('Disgust')
+        else:
+            system_prompt = "Did you detect disgust in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+
+            if "yes" in response.lower():
+                output.append('Disgust')
+        if 'Fear' in extracted_emotion and extracted_emotion['Fear']:
+            output.append('Fear')
+        else:
+            system_prompt = "Did you detect fear in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            if "yes" in response.lower():
+                output.append('Fear')
+        if 'Happiness' in extracted_emotion and extracted_emotion['Happiness']:
+            output.append('Happiness')
+        else:
+            system_prompt = "Did you detect happiness in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            if "yes" in response.lower():
+                output.append('Happiness')
+        if 'Sadness' in extracted_emotion and extracted_emotion['Sadness']:
+            output.append('Sadness')
+        else:
+            system_prompt = "Did you detect sadness in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            if "yes" in response.lower():
+                output.append('Sadness')
+        if 'Surprise' in extracted_emotion and extracted_emotion['Surprise']:
+            output.append('Surprise')
+        else:
+            system_prompt = "Did you detect surprise in the sentence? Answer Yes or No"
+            response = util.simple_llm_call(system_prompt, message, stop=stop)
+            if "yes" in response.lower():
+                output.append('Surprise')
+
+        # To count how many times this function appears in sanity check
+        # print(1)
+        return output
 
     ############################################################################
     # 6. Debug info                                                            #
