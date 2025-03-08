@@ -222,12 +222,12 @@ class Chatbot:
                 system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
                 persona = util.simple_llm_call(system_prompt, message, stop=stop)
                 return persona 
-            if "Happy" in emotions:
+            if "Happiness" in emotions:
                 message = "Yay! I am so happy that you are happy! Let's talk about more movies!" 
                 system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
                 persona = util.simple_llm_call(system_prompt, message, stop=stop)
                 return persona
-            if "Sad" in emotions:
+            if "Sadness" in emotions:
                 message =  "I'm sorry for making you sad. I'll try to recommend better ones."
                 system_prompt = "Speak the input as if you were John Cena, the WWE pro wrestler"
                 persona = util.simple_llm_call(system_prompt, message, stop=stop)
@@ -438,23 +438,30 @@ class Chatbot:
             extracted_language = util.json_llm_call(system_prompt, message, json_class)
 
             stop = ["\n"]
-            if 'German' in extracted_language and extracted_language['German']:
-                system_prompt = "Translate movie title from German to English in the format title"
-                title = util.simple_llm_call(system_prompt, message, stop=stop)
-            elif 'Spanish' in extracted_language and extracted_language['Spanish']:
-                system_prompt = "Translate movie title from Spanish to English in the format title"
-                title = util.simple_llm_call(system_prompt, message, stop=stop)
-            elif 'French' in extracted_language and extracted_language['French']:
-                system_prompt = "Translate movie title from French to English in the format title"
-                title = util.simple_llm_call(system_prompt, message, stop=stop)
-            elif 'Danish' in extracted_language and extracted_language['Danish']:
-                system_prompt = "Translate movie title from Danish to English in the format title"
-                title = util.simple_llm_call(system_prompt, message, stop=stop)
-            elif 'Italian' in extracted_language and extracted_language['Italian']:
-                system_prompt = "Translate movie title from Italian to English in the format title"
-                title = util.simple_llm_call(system_prompt, message, stop=stop)
-            else:
-                pass
+            for i in range(5):
+                if 'German' in extracted_language and extracted_language['German']:
+                    system_prompt = "Translate movie title from German to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Spanish' in extracted_language and extracted_language['Spanish']:
+                    system_prompt = "Translate movie title from Spanish to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'French' in extracted_language and extracted_language['French']:
+                    system_prompt = "Translate movie title from French to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Danish' in extracted_language and extracted_language['Danish']:
+                    system_prompt = "Translate movie title from Danish to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                elif 'Italian' in extracted_language and extracted_language['Italian']:
+                    system_prompt = "Translate movie title from Italian to English in the format title"
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
+                    break
+                else:
+                    system_prompt = "If movie title is in German, Spanish, French, Danish, or Italian, translate it to English in the format title."
+                    title = util.simple_llm_call(system_prompt, message, stop=stop)
             title = title.strip()
         
         articles = ['The ', 'A ', 'An ']
@@ -790,8 +797,8 @@ class Chatbot:
             Anger: bool = Field(default=False)
             Disgust: bool = Field(default=False)
             Fear: bool = Field(default=False)
-            Happy: bool = Field(default=False)
-            Sad: bool = Field(default=False)
+            Happiness: bool = Field(default=False)
+            Sadness: bool = Field(default=False)
             Surprise: bool = Field(default=False)
 
         system_prompt = "You are an emotion extractor bot. Read the sentence and extract the emotion into a JSON object."
@@ -824,20 +831,20 @@ class Chatbot:
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
                 output.append('Fear')
-        if 'Happy' in extracted_emotion and extracted_emotion['Happy']:
-            output.append('Happy')
+        if 'Happiness' in extracted_emotion and extracted_emotion['Happiness']:
+            output.append('Happiness')
         else:
-            system_prompt = "Did you detect happy in the sentence? Answer Yes or No"
+            system_prompt = "Did you detect happiness in the sentence? Answer Yes or No"
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
-                output.append('Happy')
-        if 'Sad' in extracted_emotion and extracted_emotion['Sad']:
-            output.append('Sad')
+                output.append('Happiness')
+        if 'Sadness' in extracted_emotion and extracted_emotion['Sadness']:
+            output.append('Sadness')
         else:
-            system_prompt = "Did you detect sad in the sentence? Answer Yes or No"
+            system_prompt = "Did you detect sadness in the sentence? Answer Yes or No"
             response = util.simple_llm_call(system_prompt, message, stop=stop)
             if "yes" in response.lower():
-                output.append('Sad')
+                output.append('Sadness')
         if 'Surprise' in extracted_emotion and extracted_emotion['Surprise']:
             output.append('Surprise')
         else:
