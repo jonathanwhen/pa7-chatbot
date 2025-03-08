@@ -756,47 +756,47 @@ class Chatbot:
         stop = ["\n"]
         if 'Anger' in extracted_emotion and extracted_emotion['Anger']:
             output.append('Anger')
-        else:
-            system_prompt = "Did you detect anger in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            if "yes" in response.lower():
-                output.append('Anger')
+        # else:
+        #     system_prompt = "Did you detect anger in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
+        #     if "yes" in response.lower():
+        #         output.append('Anger')
         if 'Disgust' in extracted_emotion and extracted_emotion['Disgust']:
             output.append('Disgust')
-        else:
-            system_prompt = "Did you detect disgust in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
+        # else:
+        #     system_prompt = "Did you detect disgust in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
 
-            if "yes" in response.lower():
-                output.append('Disgust')
+        #     if "yes" in response.lower():
+        #         output.append('Disgust')
         if 'Fear' in extracted_emotion and extracted_emotion['Fear']:
             output.append('Fear')
-        else:
-            system_prompt = "Did you detect fear in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            if "yes" in response.lower():
-                output.append('Fear')
+        # else:
+        #     system_prompt = "Did you detect fear in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
+        #     if "yes" in response.lower():
+        #         output.append('Fear')
         if 'Happiness' in extracted_emotion and extracted_emotion['Happiness']:
             output.append('Happiness')
-        else:
-            system_prompt = "Did you detect happiness in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            if "yes" in response.lower():
-                output.append('Happiness')
+        # else:
+        #     system_prompt = "Did you detect happiness in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
+        #     if "yes" in response.lower():
+        #         output.append('Happiness')
         if 'Sadness' in extracted_emotion and extracted_emotion['Sadness']:
             output.append('Sadness')
-        else:
-            system_prompt = "Did you detect sadness in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            if "yes" in response.lower():
-                output.append('Sadness')
+        # else:
+        #     system_prompt = "Did you detect sadness in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
+        #     if "yes" in response.lower():
+        #         output.append('Sadness')
         if 'Surprise' in extracted_emotion and extracted_emotion['Surprise']:
             output.append('Surprise')
-        else:
-            system_prompt = "Did you detect surprise in the sentence? Answer Yes or No"
-            response = util.simple_llm_call(system_prompt, message, stop=stop)
-            if "yes" in response.lower():
-                output.append('Surprise')
+        # else:
+        #     system_prompt = "Did you detect surprise in the sentence? Answer Yes or No"
+        #     response = util.simple_llm_call(system_prompt, message, stop=stop)
+        #     if "yes" in response.lower():
+        #         output.append('Surprise')
 
         # To count how many times this function appears in sanity check
         # print(1)
